@@ -12,7 +12,7 @@ const client = new Client({
             type: ActivityType.Streaming,
             url: "https://discord.gg/rRssukcyBd"
         }],
-        status: "dnd"
+        status: "idle"
     },
     allowedMentions: {
         parse: ["roles", "users", "everyone"],
