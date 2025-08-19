@@ -1,28 +1,47 @@
-// commands/utils/ping.js
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const db = require('../../database/db'); // seu arquivo de pool e funções
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('ping')
-    .setDescription('Responde com a latência do bot e da API do Discord'),
-  
-  async execute(interaction) {
-    // Envia uma resposta inicial para calcular o tempo de latência
-    const message = await interaction.deferReply({ fetchReply: true });
+    .setDescription('Mostra latência do bot e informações de tickets do banco de dados'),
 
-    // Cria o embed com as informações de latência
+  async execute(interaction) {
+    await interaction.deferReply({ fetchReply: true });
+
+    // Latência do bot
+    const botLatency = Date.now() - interaction.createdTimestamp;
+    const apiLatency = Math.round(interaction.client.ws.ping);
+
+    // Buscar tickets do usuário
+    let userTickets = [];
+    try {
+      userTickets = await db.getTicketByUserAndStatus(interaction.user.id, 'Aberto');
+    } catch (err) {
+      console.error('Erro ao buscar tickets do usuário:', err);
+    }
+
+    // Buscar tickets pendentes gerais
+    let allTickets = [];
+    try {
+      allTickets = await db.getAllTickets();
+    } catch (err) {
+      console.error('Erro ao buscar todos os tickets:', err);
+    }
+
+    // Criando embed
     const embed = new EmbedBuilder()
-      .setColor('#0099ff')
-      .setTitle('🏓 Pong!')
-      .setDescription('Aqui estão as latências:')
+      .setColor('#00FF00')
+      .setTitle('🏓 Ping & Info de Tickets')
       .addFields(
-        { name: 'Latência do bot', value: `${message.createdTimestamp - interaction.createdTimestamp}ms`, inline: true },
-        { name: 'Latência da API', value: `${Math.round(interaction.client.ws.ping)}ms`, inline: true }
+        { name: 'Latência do Bot', value: `${botLatency}ms`, inline: true },
+        { name: 'Latência da API', value: `${apiLatency}ms`, inline: true },
+        { name: 'Seus Tickets Abertos', value: `${userTickets.length}`, inline: true },
+        { name: 'Tickets Totais no Servidor', value: `${allTickets.length}`, inline: true }
       )
       .setTimestamp()
-      .setFooter({ text: 'Comando executado com sucesso!' });
+      .setFooter({ text: 'Informações atualizadas em tempo real' });
 
-    // Envia o embed como resposta
     await interaction.editReply({ embeds: [embed] });
-  },
+  }
 };
